@@ -76,8 +76,38 @@ public class DivByZeroTransfer extends CFTransfer {
    */
   private AnnotationMirror refineLhsOfComparison(
       Comparison operator, AnnotationMirror lhs, AnnotationMirror rhs) {
-    // TODO
-    return lhs;
+    switch (operator) {
+      case EQ:
+        return glb(lhs, rhs);
+      case NE:
+        return lhs;
+      case LT:
+        if (equal(rhs, reflect(Zero.class))) {
+          // lhs < 0
+          return glb(lhs, reflect(Neg.class));
+        }
+        return lhs;
+      case LE:
+        if (equal(rhs, reflect(Zero.class))) {
+          // lhs <= 0
+          return glb(lhs, lub(reflect(Neg.class), reflect(Zero.class)));
+        }
+        return lhs;
+      case GT:
+        if (equal(rhs, reflect(Zero.class))) {
+          // lhs > 0
+          return glb(lhs, reflect(Pos.class));
+        }
+        return lhs;
+      case GE:
+        if (equal(rhs, reflect(Zero.class))) {
+          // lhs >= 0
+          return glb(lhs, lub(reflect(Pos.class), reflect(Zero.class)));
+        }
+        return lhs;
+      default:
+        throw new IllegalArgumentException(operator.toString());
+    }
   }
 
   /**
@@ -97,8 +127,91 @@ public class DivByZeroTransfer extends CFTransfer {
    */
   private AnnotationMirror arithmeticTransfer(
       BinaryOperator operator, AnnotationMirror lhs, AnnotationMirror rhs) {
-    // TODO
-    return top();
+    switch (operator) {
+      case PLUS:
+        if (equal(lhs, reflect(Bottom.class)) || equal(rhs, reflect(Bottom.class))) {
+          return bottom();
+        } else if (equal(lhs, reflect(Top.class)) || equal(rhs, reflect(Top.class))) {
+          return top();
+        } else if (equal(lhs, reflect(Pos.class)) && equal(rhs, reflect(Pos.class))) {
+          return reflect(Pos.class);
+        } else if (equal(lhs, reflect(Neg.class)) && equal(rhs, reflect(Neg.class))) {
+          return reflect(Neg.class);
+        } else if (equal(lhs, reflect(Zero.class))) {
+          return rhs;
+        } else if (equal(rhs, reflect(Zero.class))) {
+          return lhs;
+        } 
+        return top();
+      case MINUS:
+        if (equal(lhs, reflect(Bottom.class)) || equal(rhs, reflect(Bottom.class))) {
+          return bottom();
+        } else if (equal(lhs, reflect(Top.class)) || equal(rhs, reflect(Top.class))) {
+          return top();
+        } else if (equal(lhs, reflect(Pos.class)) && equal(rhs, reflect(Neg.class))) {
+          return reflect(Pos.class);
+        } else if (equal(lhs, reflect(Neg.class)) && equal(rhs, reflect(Pos.class))) {
+          return reflect(Neg.class);
+        } else if (equal(rhs, reflect(Zero.class))) {
+          return lhs;
+        } else if (equal(lhs, reflect(Zero.class)) && equal(rhs, reflect(Pos.class))) {
+          return reflect(Neg.class);
+        } else if (equal(lhs, reflect(Zero.class)) && equal(rhs, reflect(Neg.class))) {
+          return reflect(Pos.class);
+        }
+        return top();
+      case TIMES:
+        if (equal(lhs, reflect(Bottom.class)) || equal(rhs, reflect(Bottom.class))) {
+          return bottom();
+        } else if (equal(lhs, reflect(Top.class)) || equal(rhs, reflect(Top.class))) {
+          return top();
+        } else if (equal(lhs, reflect(Zero.class)) || equal(rhs, reflect(Zero.class))) {
+          return reflect(Zero.class);
+        } else if (equal(lhs, reflect(Pos.class)) && equal(rhs, reflect(Pos.class))) {
+          return reflect(Pos.class);
+        } else if (equal(lhs, reflect(Neg.class)) && equal(rhs, reflect(Neg.class))) {
+          return reflect(Pos.class);
+        } else if ((equal(lhs, reflect(Pos.class)) && equal(rhs, reflect(Neg.class)))
+            || (equal(lhs, reflect(Neg.class)) && equal(rhs, reflect(Pos.class)))) {
+          return reflect(Neg.class);
+        }
+        return top();
+      case DIVIDE:
+        if (equal(lhs, reflect(Bottom.class)) || equal(rhs, reflect(Bottom.class))) {
+          return bottom();
+        } else if (equal(rhs, reflect(Zero.class)) || equal(rhs, reflect(Top.class))) {
+          return bottom(); // division by zero
+        } else if (equal(lhs, reflect(Top.class))) {
+          return top();
+        }  else if (equal(lhs, reflect(Zero.class))) {
+          return reflect(Zero.class);
+        } else if (equal(lhs, reflect(Pos.class)) && equal(rhs, reflect(Pos.class))) {
+          return reflect(Pos.class);
+        } else if (equal(lhs, reflect(Neg.class)) && equal(rhs, reflect(Neg.class))) {
+          return reflect(Pos.class);
+        } else if ((equal(lhs, reflect(Pos.class)) && equal(rhs, reflect(Neg.class)))
+            || (equal(lhs, reflect(Neg.class)) && equal(rhs, reflect(Pos.class)))) {
+          return reflect(Neg.class);
+        }
+        return top();
+      case MOD:
+        if (equal(lhs, reflect(Bottom.class)) || equal(rhs, reflect(Bottom.class))) {
+          return bottom();
+        } else if (equal(rhs, reflect(Zero.class)) || equal(rhs, reflect(Top.class))) {
+          return bottom(); // division by zero
+        } else if (equal(lhs, reflect(Top.class))) {
+          return top();
+        }  else if (equal(lhs, reflect(Zero.class))) {
+          return reflect(Zero.class);
+        } else if (equal(lhs, reflect(Pos.class))) {
+          return top();
+        } else if (equal(lhs, reflect(Neg.class))) {
+          return top();
+        }
+        return top();
+      default:
+        throw new IllegalArgumentException(operator.toString());
+    }
   }
 
   // ========================================================================
